@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	. "cryptography-assignment/ca-util"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +36,7 @@ func TestCommsRequestHandler(t *testing.T) {
 	CheckError(err)
 	_, ok := ifc.(*rsa.PublicKey)
 	if !ok {
-		CheckError(errors.New("not ok"))
+		t.Errorf("handler returned wrong data. want Public Key")
 	}
 }
 
