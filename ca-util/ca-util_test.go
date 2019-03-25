@@ -1,9 +1,14 @@
 package cautil
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"errors"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -23,4 +28,83 @@ func TestCheckError(t *testing.T) {
 		return
 	}
 	t.Fatalf("process ran with err %v, want exit status 1", err)
+}
+
+func TestPrivateKeyToBytes(t *testing.T) {
+	t.Logf("Running test case: %s", "Converts Private Key to Bytes")
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+	PrivateKeyToBytes(key)
+}
+
+func TestPublicKeyToBytes(t *testing.T) {
+	t.Logf("Running test case: %s", "Converts Public Key to Bytes")
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+	PublicKeyToBytes(&key.PublicKey)
+}
+
+func TestBytesToPrivateKey(t *testing.T) {
+	t.Logf("Running test case: %s", "Converts Bytes to Private Key")
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+	privateKeyBytes := PrivateKeyToBytes(key)
+
+	BytesToPrivateKey(privateKeyBytes)
+}
+
+func TestBytesToPublicKey(t *testing.T) {
+	t.Logf("Running test case: %s", "Converts Bytes to Public Key")
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+	publicKeyBytes := PublicKeyToBytes(&key.PublicKey)
+
+	BytesToPublicKey(publicKeyBytes)
+}
+
+func TestEncryptWithPublicKey(t *testing.T) {
+	t.Logf("Running test case: %s", "Encrypts with Public Key")
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+
+	EncryptWithPublicKey([]byte(`{"Message": "This is the Message"}`), &key.PublicKey)
+}
+
+func TestDecryptWithPrivateKey(t *testing.T) {
+	t.Logf("Running test case: %s", "Decrypts with Private Key")
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+
+	cipherText := EncryptWithPublicKey([]byte(`{"Message": "This is the Message"}`), &key.PublicKey)
+
+	data := DecryptWithPrivateKey(cipherText, key)
+
+	t.Logf("Running test case: %s", "Data retrieved after decryption")
+	want := []byte(`{"Message": "This is the Message"}`)
+	got := data
+
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("Retrieved wrong message: got %v want %v", want, got)
+	}
+}
+
+func TestGenerateKeys(t *testing.T) {
+	t.Logf("Running test case: %s", "Generates Keys and writes them at appropriate paths")
+	GenerateKeys()
+	path, err := filepath.Abs("store/keys/self/private.pem")
+	CheckError(err)
+	ioutil.ReadFile(path)
+}
+
+func TestSignHash(t *testing.T) {
+	t.Logf("Running test case: %s", "Signs Hash")
+	key := GenerateKeys()
+
+	SignHash(key, [64]byte{})
 }

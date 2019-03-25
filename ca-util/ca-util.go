@@ -1,6 +1,7 @@
 package cautil
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
@@ -8,7 +9,13 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+)
+
+const (
+	BITSIZE int = 2048
 )
 
 func CheckError(err error) {
@@ -87,4 +94,32 @@ func DecryptWithPrivateKey(ciphertext []byte, priv *rsa.PrivateKey) []byte {
 	plaintext, err := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext, nil)
 	CheckError(err)
 	return plaintext
+}
+
+func GenerateKeys() *rsa.PrivateKey {
+	reader := rand.Reader
+	key, err := rsa.GenerateKey(reader, BITSIZE)
+	CheckError(err)
+
+	privateKeyBytes := PrivateKeyToBytes(key)
+	path, err := filepath.Abs("store/keys/self/private.pem")
+	os.MkdirAll(filepath.Dir(path), 0644)
+	err = ioutil.WriteFile(path, privateKeyBytes, 0600)
+	CheckError(err)
+
+	publicKey := key.PublicKey
+	publicKeyBytes := PublicKeyToBytes(&publicKey)
+	path, err = filepath.Abs("store/keys/self/public.pem")
+	err = ioutil.WriteFile(path, publicKeyBytes, 0644)
+	CheckError(err)
+
+	return key
+}
+
+func SignHash(rsaKey *rsa.PrivateKey, checksum [64]byte) []byte {
+	reader := rand.Reader
+	signature, err := rsa.SignPKCS1v15(reader, rsaKey, crypto.SHA512, checksum[:])
+	CheckError(err)
+
+	return signature
 }
