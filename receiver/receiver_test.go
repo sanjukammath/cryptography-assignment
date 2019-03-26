@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	. "cryptography-assignment/ca-util"
@@ -12,6 +13,7 @@ import (
 )
 
 func TestCommsRequestHandler(t *testing.T) {
+	t.Logf("Running test case: %s", "CommsRequestHandler responds with a public key")
 	req, err := http.NewRequest("GET", "/requestComms", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -41,8 +43,10 @@ func TestCommsRequestHandler(t *testing.T) {
 }
 
 func TestMessageHandler(t *testing.T) {
-	req, err := http.NewRequest("POST", "/message", nil)
+	t.Logf("Running test case: %s", "MessageHandler validates message")
+	req, err := http.NewRequest("POST", "/message", bytes.NewReader([]byte{}))
 	if err != nil {
+		fmt.Println("Done")
 		t.Fatal(err)
 	}
 
@@ -51,8 +55,8 @@ func TestMessageHandler(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusOK {
+	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+			status, http.StatusBadRequest)
 	}
 }

@@ -100,6 +100,9 @@ func TestGenerateKeys(t *testing.T) {
 	path, err := filepath.Abs("store/keys/self/private.pem")
 	CheckError(err)
 	ioutil.ReadFile(path)
+	path, err = filepath.Abs("store/keys/self/public.pem")
+	CheckError(err)
+	ioutil.ReadFile(path)
 }
 
 func TestSignHash(t *testing.T) {
@@ -107,4 +110,9 @@ func TestSignHash(t *testing.T) {
 	key := GenerateKeys()
 
 	SignHash(key, [64]byte{})
+}
+
+func TestGetPublicKey(t *testing.T) {
+	t.Logf("Running test case: %s", "Gets Public Key from url")
+	GetPublicKey("http://localhost:3000/requestComms")
 }

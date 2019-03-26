@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -122,4 +123,23 @@ func SignHash(rsaKey *rsa.PrivateKey, checksum [64]byte) []byte {
 	CheckError(err)
 
 	return signature
+}
+
+func GetPublicKey(url string) *rsa.PublicKey {
+	resp, err := http.Get(url)
+	CheckError(err)
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	CheckError(err)
+
+	path, err := filepath.Abs("store/keys/receiver/public.pem")
+	os.MkdirAll(filepath.Dir(path), 0644)
+	err = ioutil.WriteFile(path, body, 0644)
+	CheckError(err)
+
+	recieverKey := BytesToPublicKey(body)
+
+	return recieverKey
 }

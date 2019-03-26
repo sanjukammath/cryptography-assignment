@@ -46,10 +46,14 @@ func commsRequestHandler(w http.ResponseWriter, r *http.Request) {
 func messageHandler(w http.ResponseWriter, r *http.Request) {
 
 	secureMessageBytes, err := ioutil.ReadAll(r.Body)
+	CheckError(err)
 
 	var secureMessage SecureMessage
 	err = json.Unmarshal(secureMessageBytes, &secureMessage)
-	CheckError(err)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	encryptedAESK := secureMessage.EncryptedAESK
 	ciphertext := secureMessage.EncryptedMessage
@@ -74,14 +78,14 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		fmt.Println(err)
-	}
+	CheckError(err)
 
 	var message Message
 
 	err = json.Unmarshal(plaintext, &message)
+	CheckError(err)
 
 	fmt.Println(message.Data)
 }

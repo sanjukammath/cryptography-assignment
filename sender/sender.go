@@ -32,8 +32,6 @@ type Info struct {
 }
 
 func main() {
-	fmt.Println("the sender is coming up...")
-
 	info := &Info{"This is a Secret Message", "Written By Sanjay S B"}
 	infoBytes, err := json.Marshal(info)
 	CheckError(err)
@@ -46,19 +44,7 @@ func main() {
 
 	signature := SignHash(rsaKey, checksum)
 
-	resp, err := http.Get("http://localhost:3000/requestComms")
-	CheckError(err)
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	CheckError(err)
-
-	path, err := filepath.Abs("store/keys/receiver/public.pem")
-	err = ioutil.WriteFile(path, body, 0644)
-	CheckError(err)
-
-	recieverKey := BytesToPublicKey(body)
+	recieverKey := GetPublicKey("http://localhost:3000/requestComms")
 
 	CheckError(err)
 
@@ -91,7 +77,7 @@ func main() {
 	CheckError(err)
 
 	client := &http.Client{}
-	resp, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
@@ -99,7 +85,7 @@ func main() {
 
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
-	body, _ = ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println("response Body:", string(body))
 
 }
