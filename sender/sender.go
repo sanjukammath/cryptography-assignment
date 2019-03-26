@@ -10,9 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"path/filepath"
 )
 
 type SecureMessage struct {
@@ -38,35 +36,27 @@ func main() {
 
 	checksum := sha512.Sum512(infoBytes)
 	rsaKey := GenerateKeys()
+	signature := SignHash(rsaKey, checksum)
 
 	publicKey := rsaKey.PublicKey
 	publicKeyBytes := PublicKeyToBytes(&publicKey)
-
-	signature := SignHash(rsaKey, checksum)
+	message := &Message{*info, signature, publicKeyBytes}
+	messageBytes, err := json.Marshal(message)
+	CheckError(err)
 
 	recieverKey := GetPublicKey("http://localhost:3000/requestComms")
 
-	CheckError(err)
-
-	key := []byte("passphrasewhichneedstobe32bytes!")
-
+	key := []byte("32byteslongsecretpassphrase!1234")
 	c, err := aes.NewCipher(key)
 	CheckError(err)
-
-	encryptedAESK := EncryptWithPublicKey(key, recieverKey)
-
 	gcm, err := cipher.NewGCM(c)
 	CheckError(err)
-
 	nonce := make([]byte, gcm.NonceSize())
 	_, err = io.ReadFull(rand.Reader, nonce)
 	CheckError(err)
 
-	message := &Message{*info, signature, publicKeyBytes}
-
-	messageBytes, err := json.Marshal(message)
-	CheckError(err)
 	encryptedMessage := gcm.Seal(nonce, nonce, messageBytes, nil)
+	encryptedAESK := EncryptWithPublicKey(key, recieverKey)
 
 	secureMessage := &SecureMessage{encryptedMessage, encryptedAESK}
 
@@ -84,8 +74,4 @@ func main() {
 	defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
-
 }
