@@ -7,8 +7,10 @@ import (
 	. "cryptography-assignment/ca-util"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 )
 
@@ -59,4 +61,25 @@ func TestMessageHandler(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusBadRequest)
 	}
+}
+
+func TestStoreSenderKey(t *testing.T) {
+	t.Logf("Running test case: %s", "Store Sender key stores the Key")
+	req, err := http.NewRequest("GET", "/requestComms", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(commsRequestHandler)
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	storeSenderKey(rr.Body.Bytes())
+
+	path, err := filepath.Abs("store/keys/sender/public.pem")
+	CheckError(err)
+	ioutil.ReadFile(path)
 }

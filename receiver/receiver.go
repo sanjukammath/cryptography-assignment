@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
@@ -87,5 +88,18 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(plaintext, &message)
 	CheckError(err)
 
+	senderPubKey := message.PubKey
+
+	storeSenderKey(senderPubKey)
+
 	fmt.Println(message.Data)
+}
+
+func storeSenderKey(senderPubKey []byte) {
+	path, err := filepath.Abs("store/keys/sender/public.pem")
+
+	os.MkdirAll(filepath.Dir(path), 0644)
+	err = ioutil.WriteFile(path, senderPubKey, 0644)
+	CheckError(err)
+
 }
